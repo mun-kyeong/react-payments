@@ -13259,7 +13259,141 @@ const GlobalStyle = ft`
     font-style: normal;
     src: url(${Inter}) format('truetype');
   }
-  
+
+  /* http://meyerweb.com/eric/tools/css/reset/ 
+   v2.0 | 20110126
+   License: none (public domain)
+   
+   reset.css
+  */  
+
+  html,
+  body,
+  div,
+  span,
+  applet,
+  object,
+  iframe,
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6,
+  p,
+  blockquote,
+  pre,
+  a,
+  abbr,
+  acronym,
+  address,
+  big,
+  cite,
+  code,
+  del,
+  dfn,
+  em,
+  img,
+  ins,
+  kbd,
+  q,
+  s,
+  samp,
+  small,
+  strike,
+  strong,
+  sub,
+  sup,
+  tt,
+  var,
+  b,
+  u,
+  i,
+  center,
+  dl,
+  dt,
+  dd,
+  ol,
+  ul,
+  li,
+  fieldset,
+  form,
+  label,
+  legend,
+  table,
+  caption,
+  tbody,
+  tfoot,
+  thead,
+  tr,
+  th,
+  td,
+  article,
+  aside,
+  canvas,
+  details,
+  embed,
+  figure,
+  figcaption,
+  footer,
+  header,
+  hgroup,
+  menu,
+  nav,
+  output,
+  ruby,
+  section,
+  summary,
+  time,
+  mark,
+  audio,
+  video {
+    margin: 0;
+    padding: 0;
+    border: 0;
+    font-size: 100%;
+    font: inherit;
+    vertical-align: baseline;
+  }
+  /* HTML5 display-role reset for older browsers */
+  article,
+  aside,
+  details,
+  figcaption,
+  figure,
+  footer,
+  header,
+  hgroup,
+  menu,
+  nav,
+  section {
+    display: block;
+  }
+  body {
+    line-height: 1;
+  }
+  ol,
+  ul {
+    list-style: none;
+  }
+  blockquote,
+  q {
+    quotes: none;
+  }
+  blockquote:before,
+  blockquote:after,
+  q:before,
+  q:after {
+    content: "";
+    content: none;
+  }
+  table {
+    border-collapse: collapse;
+    border-spacing: 0;
+  }
+
+
+      
   `;
 function CardInfoBox({ cardNumber, expirationDate }) {
   return /* @__PURE__ */ jsxRuntimeExports.jsxs(CardInfoBoxContainer, { children: [
@@ -13355,188 +13489,6 @@ const CardTypeBadge = dt.img`
   top: 8px;
   right: 12px;
 `;
-function BaseInputField({
-  label,
-  children,
-  errorMessage
-}) {
-  return /* @__PURE__ */ jsxRuntimeExports.jsxs(InputFieldContainer, { children: [
-    /* @__PURE__ */ jsxRuntimeExports.jsx(Label, { children: label }),
-    /* @__PURE__ */ jsxRuntimeExports.jsx(InputWrapper, { children }),
-    /* @__PURE__ */ jsxRuntimeExports.jsx(ErrorMessage, { children: errorMessage })
-  ] });
-}
-const InputFieldContainer = dt.div`
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-`;
-const Label = dt.p`
-  font-weight: 500;
-  font-size: 12px;
-`;
-const InputWrapper = dt.div`
-  display: flex;
-  gap: 10px;
-`;
-const ErrorMessage = dt.p`
-  min-height: 14px;
-  font-weight: 400;
-  font-size: 9.5px;
-  color: #ff3d3d;
-`;
-function Input({
-  placeholder,
-  isError,
-  value,
-  name,
-  type,
-  onChange,
-  onBlur
-}) {
-  const handleTypeChange = (e) => {
-    const { value: value2, name: name2 } = e.target;
-    if (type === "number") {
-      const numericValue = value2.replace(/[^0-9]/g, "");
-      return onChange({ value: numericValue, name: name2 });
-    }
-    return onChange({ value: value2, name: name2 });
-  };
-  return /* @__PURE__ */ jsxRuntimeExports.jsx(
-    StyledInput,
-    {
-      placeholder,
-      value,
-      inputMode: type === "number" ? "numeric" : "text",
-      $isError: isError ?? false,
-      onChange: handleTypeChange,
-      name,
-      type: "text",
-      onBlur
-    }
-  );
-}
-const StyledInput = dt.input`
-  width: 100%;
-  height: 32px;
-  border: 1px solid;
-  border-radius: 2px;
-  padding: 8px;
-  box-sizing: border-box;
-  border-color: ${(props) => props.$isError ? "red" : "#acacac"};
-
-  &:focus {
-    outline: none;
-    border-color: ${(props) => props.$isError ? "red" : "black"};
-  }
-
-  &::placeholder {
-    font-weight: 400;
-    font-size: 11px;
-    color: #acacac;
-  }
-`;
-const ERROR_TYPE_TO_MESSAGE = {
-  noneCardType: "유효하지 않은 카드 번호입니다. 카드 번호를 확인해주세요",
-  shortCardSegment: "카드 번호는 4자리씩 입력해주세요."
-};
-const CARD_NUMBER_INPUT_TYPE = [
-  "cardNumberPart1",
-  "cardNumberPart2",
-  "cardNumberPart3",
-  "cardNumberPart4"
-];
-const EXPIRATION_DATE_INPUT_PLACEHOLDER = {
-  expirationDatePart1: "MM",
-  expirationDatePart2: "YY"
-};
-const EXPIRATION_DATE_INPUT_TYPE = [
-  "expirationDatePart1",
-  "expirationDatePart2"
-];
-function CardNumberInputField({
-  inputValue,
-  setInputValue,
-  cardType,
-  setCardType
-}) {
-  const [errorTypes, setErrorTypes] = reactExports.useState({
-    cardNumberPart1: [],
-    cardNumberPart2: [],
-    cardNumberPart3: [],
-    cardNumberPart4: []
-  });
-  const [errorMessage, setErrorMessage] = reactExports.useState("");
-  const updateCardError = (inputName, errorStatus) => {
-    const currentErrorType = errorTypes[inputName];
-    if (errorStatus.isError) {
-      const set = new Set(currentErrorType);
-      set.add(errorStatus.errorType);
-      setErrorTypes((prevValue) => ({
-        ...prevValue,
-        [inputName]: Array.from(set)
-      }));
-    } else {
-      const filteredErrorType = currentErrorType.filter(
-        (errorType) => errorType !== errorStatus.errorType
-      );
-      setErrorTypes((prevValue) => ({
-        ...prevValue,
-        [inputName]: filteredErrorType
-      }));
-    }
-  };
-  const checkCardTypeFromPrefix = (value) => {
-    if (value.length <= 2) {
-      if (value[0] === "4") setCardType("visa");
-      else if (value >= "51" && value <= "55") setCardType("master");
-      else setCardType(null);
-    } else if (cardType === null) {
-      return true;
-    }
-    return false;
-  };
-  const onChange = ({ name, value }) => {
-    if (value.length <= 4) {
-      if (name === CARD_NUMBER_INPUT_TYPE[0]) {
-        const isError = checkCardTypeFromPrefix(value);
-        updateCardError(CARD_NUMBER_INPUT_TYPE[0], {
-          errorType: "noneCardType",
-          isError
-        });
-      }
-      setInputValue((prevValue) => ({ ...prevValue, [name]: value }));
-    }
-  };
-  const onBlur = (e) => {
-    const { value, name } = e.target;
-    updateCardError(name, {
-      errorType: "shortCardSegment",
-      isError: value.length > 0 && value.length < 4
-    });
-  };
-  reactExports.useEffect(() => {
-    const errorStatus = Object.values(errorTypes).find(
-      (errorType) => errorType.length
-    );
-    if (errorStatus && (errorStatus == null ? void 0 : errorStatus.length) !== 0)
-      setErrorMessage(ERROR_TYPE_TO_MESSAGE[errorStatus[0]]);
-    else setErrorMessage("");
-  }, [errorTypes]);
-  return /* @__PURE__ */ jsxRuntimeExports.jsx(BaseInputField, { label: "카드 번호", errorMessage, children: CARD_NUMBER_INPUT_TYPE.map((inputType) => /* @__PURE__ */ jsxRuntimeExports.jsx(
-    Input,
-    {
-      type: "number",
-      placeholder: "1234",
-      value: inputValue[inputType],
-      onChange,
-      onBlur,
-      name: inputType,
-      isError: Boolean(errorTypes[inputType].length)
-    },
-    inputType
-  )) });
-}
 function InputSection({ title, caption, children }) {
   return /* @__PURE__ */ jsxRuntimeExports.jsxs(Section, { children: [
     /* @__PURE__ */ jsxRuntimeExports.jsxs(TitleWrapper, { children: [
@@ -13566,51 +13518,284 @@ const Caption = dt.p`
   font-size: 9.5px;
   color: #8b95a1;
 `;
+const CARD_NUMBER_INPUT_TYPE = [
+  "cardNumberPart1",
+  "cardNumberPart2",
+  "cardNumberPart3",
+  "cardNumberPart4"
+];
+const EXPIRATION_DATE_INPUT_PLACEHOLDER = {
+  expirationDatePart1: "MM",
+  expirationDatePart2: "YY"
+};
+const EXPIRATION_DATE_INPUT_TYPE = [
+  "expirationDatePart1",
+  "expirationDatePart2"
+];
+const ERROR_TYPE_TO_MESSAGE = {
+  noneCardType: "유효하지 않은 카드 번호입니다. 카드 번호를 확인해주세요",
+  shortCardSegment: "카드 번호는 4자리씩 입력해주세요."
+};
+function BaseInputField({
+  label,
+  children,
+  errorMessage
+}) {
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs(InputFieldContainer, { children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("fieldset", { children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsx(Legend, { children: label }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx(InputWrapper, { children })
+    ] }),
+    /* @__PURE__ */ jsxRuntimeExports.jsx(ErrorMessage, { children: errorMessage })
+  ] });
+}
+const InputFieldContainer = dt.div`
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+`;
+const Legend = dt.legend`
+  margin-bottom: 8px;
+  font-weight: 500;
+  font-size: 12px;
+`;
+const InputWrapper = dt.div`
+  display: flex;
+  gap: 10px;
+`;
+const ErrorMessage = dt.p`
+  min-height: 14px;
+  font-weight: 400;
+  font-size: 9.5px;
+  color: #ff3d3d;
+`;
+function Input({
+  id,
+  placeholder,
+  isError,
+  value,
+  name,
+  inputType,
+  onChange,
+  onBlur
+}) {
+  const handleTypeChange = (e) => {
+    const { value: value2, name: name2 } = e.target;
+    if (inputType === "number") {
+      const numericValue = value2.replace(/[^0-9]/g, "");
+      return onChange({ value: numericValue, name: name2 });
+    }
+    return onChange({ value: value2, name: name2 });
+  };
+  return /* @__PURE__ */ jsxRuntimeExports.jsx(
+    StyledInput,
+    {
+      id,
+      placeholder,
+      value,
+      inputMode: inputType === "number" ? "numeric" : "text",
+      $isError: isError ?? false,
+      onChange: handleTypeChange,
+      name,
+      type: "text",
+      onBlur
+    }
+  );
+}
+const StyledInput = dt.input`
+  width: 100%;
+  height: 32px;
+  border: 1px solid;
+  border-radius: 2px;
+  padding: 8px;
+  box-sizing: border-box;
+  border-color: ${(props) => props.$isError ? "red" : "#acacac"};
+
+  &:focus {
+    outline: none;
+    border-color: ${(props) => props.$isError ? "red" : "black"};
+  }
+
+  &::placeholder {
+    font-weight: 400;
+    font-size: 11px;
+    color: #acacac;
+  }
+`;
+const MAX_CARD_LENGTH = 4;
+const CARD_TYPE_ID_LENGTH = 2;
+function CardNumberInputField({
+  inputValue,
+  setInputValue,
+  cardType,
+  setCardType
+}) {
+  const [errorTypes, setErrorTypes] = reactExports.useState({
+    cardNumberPart1: [],
+    cardNumberPart2: [],
+    cardNumberPart3: [],
+    cardNumberPart4: []
+  });
+  const errorStatus = Object.values(errorTypes).find(
+    (errorType) => errorType.length
+  );
+  const errorMessage = errorStatus && (errorStatus == null ? void 0 : errorStatus.length) !== 0 ? ERROR_TYPE_TO_MESSAGE[errorStatus[0]] : "";
+  const validateCardError = (inputName, errorStatus2) => {
+    const currentErrorType = errorTypes[inputName];
+    if (errorStatus2.isError) {
+      const set = new Set(currentErrorType);
+      set.add(errorStatus2.errorType);
+      return Array.from(set);
+    } else {
+      return currentErrorType.filter(
+        (errorType) => errorType !== errorStatus2.errorType
+      );
+    }
+  };
+  const checkCardTypeFromPrefix = (value) => {
+    if (value.length > CARD_TYPE_ID_LENGTH) {
+      if (cardType === null) return true;
+      return false;
+    }
+    if (value[0] === "4") setCardType("visa");
+    else if (Number(value) >= 51 && Number(value) <= 55) setCardType("master");
+    else setCardType(null);
+    return false;
+  };
+  const onChange = ({ name, value }) => {
+    if (value.length > MAX_CARD_LENGTH) return;
+    if (name === CARD_NUMBER_INPUT_TYPE[0]) {
+      const isError = checkCardTypeFromPrefix(value);
+      const updatedErrorTypes = validateCardError(CARD_NUMBER_INPUT_TYPE[0], {
+        errorType: "noneCardType",
+        isError
+      });
+      setErrorTypes((prevValue) => ({
+        ...prevValue,
+        cardNumberPart1: updatedErrorTypes
+      }));
+    }
+    setInputValue((prevValue) => ({ ...prevValue, [name]: value }));
+  };
+  const onBlur = (e) => {
+    const { value, name } = e.target;
+    const updatedErrorTypes = validateCardError(name, {
+      errorType: "shortCardSegment",
+      isError: value.length > 0 && value.length < MAX_CARD_LENGTH
+    });
+    setErrorTypes((prevValue) => ({
+      ...prevValue,
+      [name]: updatedErrorTypes
+    }));
+  };
+  return /* @__PURE__ */ jsxRuntimeExports.jsx(BaseInputField, { label: "카드 번호", errorMessage, children: CARD_NUMBER_INPUT_TYPE.map((inputType) => /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsx(Label$2, { htmlFor: `card-number-input-${inputType}` }),
+    /* @__PURE__ */ jsxRuntimeExports.jsx(
+      Input,
+      {
+        id: `card-number-input-${inputType}`,
+        inputType: "number",
+        placeholder: "1234",
+        value: inputValue[inputType],
+        onChange,
+        onBlur,
+        name: inputType,
+        isError: Boolean(errorTypes[inputType].length)
+      },
+      inputType
+    )
+  ] })) });
+}
+const Label$2 = dt.label`
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+`;
+const MAX_MONTH_LENGTH = 2;
+const MAX_MONTH_VALUE = 12;
 function ExpirationDateInputField({
   inputValue,
   setInputValue
 }) {
   const onChange = ({ name, value }) => {
-    if (value.length <= 2) {
-      if (name === "expirationDatePart1" && Number(value) > 12) return;
+    if (value.length <= MAX_MONTH_LENGTH) {
+      if (name === "expirationDatePart1" && Number(value) > MAX_MONTH_VALUE)
+        return;
       setInputValue((prevValue) => ({ ...prevValue, [name]: value }));
     }
   };
   const onBlur = (e) => {
     const { value, name } = e.target;
     if (value.length === 1)
-      setInputValue({ ...inputValue, [name]: `0${value}` });
+      setInputValue((prevValue) => ({ ...prevValue, [name]: `0${value}` }));
   };
-  return /* @__PURE__ */ jsxRuntimeExports.jsx(BaseInputField, { label: "유효기간", children: EXPIRATION_DATE_INPUT_TYPE.map((inputType) => /* @__PURE__ */ jsxRuntimeExports.jsx(
-    Input,
-    {
-      type: "number",
-      placeholder: EXPIRATION_DATE_INPUT_PLACEHOLDER[inputType],
-      value: inputValue[inputType],
-      onChange,
-      name: inputType,
-      onBlur
-    },
-    inputType
-  )) });
+  return /* @__PURE__ */ jsxRuntimeExports.jsx(BaseInputField, { label: "유효기간", children: EXPIRATION_DATE_INPUT_TYPE.map((inputType) => /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsx(Label$1, { htmlFor: `expiration-date-${inputType}` }),
+    /* @__PURE__ */ jsxRuntimeExports.jsx(
+      Input,
+      {
+        id: `expiration-date-${inputType}`,
+        inputType: "number",
+        placeholder: EXPIRATION_DATE_INPUT_PLACEHOLDER[inputType],
+        value: inputValue[inputType],
+        onChange,
+        name: inputType,
+        onBlur
+      },
+      inputType
+    )
+  ] })) });
 }
+const Label$1 = dt.label`
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+`;
+const MAX_CVC_LENGTH = 3;
 function CVCInputField({ inputValue, setInputValue }) {
   const onChange = ({ name, value }) => {
-    if (value.length <= 3)
+    if (value.length <= MAX_CVC_LENGTH)
       setInputValue((prevValue) => ({ ...prevValue, [name]: value }));
   };
-  return /* @__PURE__ */ jsxRuntimeExports.jsx(BaseInputField, { label: "CVC", children: /* @__PURE__ */ jsxRuntimeExports.jsx(
-    Input,
-    {
-      type: "number",
-      placeholder: "123",
-      value: inputValue.CVCPart1,
-      onChange,
-      name: "CVCPart1"
-    }
-  ) });
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs(BaseInputField, { label: "CVC", children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsx(Label, { htmlFor: "CVC-input" }),
+    /* @__PURE__ */ jsxRuntimeExports.jsx(
+      Input,
+      {
+        id: "CVC-input",
+        inputType: "number",
+        placeholder: "123",
+        value: inputValue.CVCPart1,
+        onChange,
+        name: "CVCPart1"
+      }
+    )
+  ] });
 }
-function App() {
+const Label = dt.label`
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+`;
+function Payments() {
   const [cardNumberInputValue, setCardNumberInputValue] = reactExports.useState({
     cardNumberPart1: "",
     cardNumberPart2: "",
@@ -13691,6 +13876,9 @@ const PaymentsContainer = dt.div`
   background-color: white;
   border: 1px solid lightgray;
 `;
+function App() {
+  return /* @__PURE__ */ jsxRuntimeExports.jsx(Payments, {});
+}
 ReactDOM.createRoot(document.getElementById("root")).render(
   /* @__PURE__ */ jsxRuntimeExports.jsxs(React.StrictMode, { children: [
     /* @__PURE__ */ jsxRuntimeExports.jsx(GlobalStyle, {}),
