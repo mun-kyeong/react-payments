@@ -16655,7 +16655,7 @@ const PaymentsLayout = dt.div`
   height: 100vh;
 `;
 function App() {
-  return /* @__PURE__ */ jsxRuntimeExports.jsx(BrowserRouter, { children: /* @__PURE__ */ jsxRuntimeExports.jsxs(Routes, { children: [
+  return /* @__PURE__ */ jsxRuntimeExports.jsx(BrowserRouter, { basename: "/react-payments", children: /* @__PURE__ */ jsxRuntimeExports.jsxs(Routes, { children: [
     /* @__PURE__ */ jsxRuntimeExports.jsx(Route, { path: "/", element: /* @__PURE__ */ jsxRuntimeExports.jsx(Payments, {}) }),
     /* @__PURE__ */ jsxRuntimeExports.jsx(Route, { path: "/payments", element: /* @__PURE__ */ jsxRuntimeExports.jsx(Payments, {}) }),
     /* @__PURE__ */ jsxRuntimeExports.jsx(Route, { path: "/payments/complete/", element: /* @__PURE__ */ jsxRuntimeExports.jsx(PaymentsComplete, {}) })
