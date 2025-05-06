@@ -14634,6 +14634,38 @@ function DataRoutes({
 }) {
   return useRoutesImpl(routes, void 0, state, future);
 }
+function Navigate({
+  to,
+  replace: replace2,
+  state,
+  relative
+}) {
+  invariant(
+    useInRouterContext(),
+    // TODO: This error is probably because they somehow have 2 versions of
+    // the router loaded. We can help them understand how to avoid that.
+    `<Navigate> may be used only in the context of a <Router> component.`
+  );
+  let { static: isStatic } = reactExports.useContext(NavigationContext);
+  warning(
+    !isStatic,
+    `<Navigate> must not be used on the initial render in a <StaticRouter>. This is a no-op, but you should modify your code so the <Navigate> is only ever rendered in response to some user interaction or state change.`
+  );
+  let { matches } = reactExports.useContext(RouteContext);
+  let { pathname: locationPathname } = useLocation();
+  let navigate = useNavigate();
+  let path = resolveTo(
+    to,
+    getResolveToMatches(matches),
+    locationPathname,
+    relative === "path"
+  );
+  let jsonPath = JSON.stringify(path);
+  reactExports.useEffect(() => {
+    navigate(JSON.parse(jsonPath), { replace: replace2, state, relative });
+  }, [navigate, jsonPath, relative, replace2, state]);
+  return null;
+}
 function Route(_props) {
   invariant(
     false,
@@ -15662,26 +15694,27 @@ const CardNumberMask = dt.div`
   background-color: white;
   border-radius: 50%;
 `;
+const CARD_ISSUER_COLORS = {
+  BC카드: "#F04651",
+  신한카드: "#0046FF",
+  카카오뱅크: "#FFE600",
+  현대카드: "#000000",
+  우리카드: "#007BC8",
+  롯데카드: "#ED1C24",
+  하나카드: "#009490",
+  국민카드: "#6A6056"
+};
+const DEFAULT_CARD_COLOR = "#333333";
 function CardPreview({
   cardNumberInputValue,
   expirationDateInputValue,
   cardType,
   cardIssuer
 }) {
-  const issuerBackground = {
-    BC카드: "#F04651",
-    신한카드: "#0046FF",
-    카카오뱅크: "#FFE600",
-    현대카드: "#000000",
-    우리카드: "#007BC8",
-    롯데카드: "#ED1C24",
-    하나카드: "#009490",
-    국민카드: "#6A6056"
-  };
   return /* @__PURE__ */ jsxRuntimeExports.jsxs(
     Card,
     {
-      $cardBackground: cardIssuer ? issuerBackground[cardIssuer] : "#333333",
+      $cardBackground: cardIssuer ? CARD_ISSUER_COLORS[cardIssuer] : DEFAULT_CARD_COLOR,
       children: [
         /* @__PURE__ */ jsxRuntimeExports.jsx(CardChip, {}),
         /* @__PURE__ */ jsxRuntimeExports.jsx(CardTypeBadge, { src: `./img/${cardType}.png`, $cardType: cardType }),
@@ -15759,87 +15792,42 @@ const INPUT_FIELD_MAX_LENGTH = {
   expirationDate: 2,
   password: 2
 };
-const ERROR_TYPE_TO_MESSAGE = {
-  noneCardType: "유효하지 않은 카드 번호입니다. 카드 번호를 확인해주세요",
-  shortCardSegment: "카드 번호는 4자리씩 입력해주세요.",
-  shortCVCSegment: "CVC 번호는 3자리씩 입력해주세요.",
-  shortPasswordSegment: "비밀번호 앞의 2자리를 입력해주세요.",
-  expirationDateSegment: "유효한 만료일(월/년도 2자리)을 입력해주세요."
-};
-function useInputError({
-  inputValue
-}) {
-  const [errorTypes, setErrorTypes] = reactExports.useState(
-    Object.keys(inputValue).reduce(
-      (acc, key) => {
-        acc[key] = [];
-        return acc;
-      },
-      {}
-    )
-  );
-  const errorMessage = reactExports.useMemo(() => {
-    const currentErrorStatus = Object.values(errorTypes).find((arr) => arr.length > 0);
-    const currentErrorType = currentErrorStatus == null ? void 0 : currentErrorStatus[0];
-    return currentErrorType ? ERROR_TYPE_TO_MESSAGE[currentErrorType] : "";
-  }, [errorTypes]);
-  const validateInputError = (inputName, { errorType, isError }) => {
-    setErrorTypes((prevValue) => {
-      const currentErrorType = errorTypes[inputName];
-      if (isError) {
-        const set = new Set(currentErrorType).add(errorType);
-        return {
-          ...prevValue,
-          [inputName]: Array.from(set)
-        };
-      } else {
-        return {
-          ...prevValue,
-          [inputName]: currentErrorType.filter(
-            (errorType2) => errorType2 !== errorType2
-          )
-        };
-      }
-    });
-  };
-  return { errorTypes, errorMessage, validateInputError };
-}
 const INPUT_ERROR_TYPE = {
   cardNumber: "shortCardSegment",
   CVC: "shortCVCSegment",
   expirationDate: "expirationDateSegment",
   password: "shortPasswordSegment"
 };
-const INPUT_FIELD_LENGTH = {
-  cardNumber: 4,
-  CVC: 1,
-  expirationDate: 2,
-  password: 1
+const INPUT_NAME_TO_INDEX = {
+  cardNumberPart1: 0,
+  cardNumberPart2: 1,
+  cardNumberPart3: 2,
+  cardNumberPart4: 3,
+  CVCPart1: 0,
+  expirationDatePart1: 0,
+  expirationDatePart2: 1,
+  passwordPart1: 0
 };
 function useInputFieldHandler({
   fieldName,
   inputRefs,
-  hasError,
   validateInputError,
   setInputValue
 }) {
   const maxLength = INPUT_FIELD_MAX_LENGTH[fieldName];
-  const inputFieldLength = INPUT_FIELD_LENGTH[fieldName];
   const onChange = ({ name, value }) => {
-    var _a, _b;
+    var _a;
     if (value.length > maxLength) return;
-    if (fieldName === "expirationDate" && name === "expirationDatePart1" && Number(value) > 12)
-      return;
     setInputValue((prevValue) => ({ ...prevValue, [name]: value }));
+    const nextIndex = INPUT_NAME_TO_INDEX[name] + 1;
+    if (!inputRefs.current[nextIndex]) return;
     if (value.length === maxLength) {
-      const inputPart = Number((_a = name.match(/\d+/)) == null ? void 0 : _a[0]) - 1;
-      if (inputPart < inputFieldLength && !hasError)
-        (_b = inputRefs.current[inputPart + 1]) == null ? void 0 : _b.focus();
+      (_a = inputRefs.current[INPUT_NAME_TO_INDEX[name] + 1]) == null ? void 0 : _a.focus();
     }
   };
   const onBlur = (e) => {
     const { name, value } = e.target;
-    validateInputError && validateInputError(name, {
+    validateInputError == null ? void 0 : validateInputError(name, {
       errorType: INPUT_ERROR_TYPE[fieldName],
       isError: value.length < maxLength
     });
@@ -15934,13 +15922,62 @@ const StyledInput = dt.input`
     color: #acacac;
   }
 `;
-function useFieldCompletion({
-  errorMessage,
-  fieldName,
+function InputSection({ title, caption, children }) {
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs(Section, { children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsxs(TitleWrapper, { children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsx(Title, { children: title }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx(Caption, { children: caption })
+    ] }),
+    children
+  ] });
+}
+const Section = dt.section`
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  gap: 16px;
+`;
+const TitleWrapper = dt.div`
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+`;
+const Title = dt.p`
+  font-weight: 700;
+  font-size: 18px;
+`;
+const Caption = dt.p`
+  font-weight: 400;
+  font-size: 9.5px;
+  color: #8b95a1;
+`;
+const ERROR_TYPE_TO_MESSAGE = {
+  noneCardType: "유효하지 않은 카드 번호입니다. 카드 번호를 확인해주세요",
+  shortCardSegment: "카드 번호는 4자리씩 입력해주세요.",
+  shortCVCSegment: "CVC 번호는 3자리씩 입력해주세요.",
+  shortPasswordSegment: "비밀번호 앞의 2자리를 입력해주세요.",
+  expirationDateSegment: "유효한 만료일(월/년도 2자리)을 입력해주세요."
+};
+function useFieldValidation({
   inputValue,
+  fieldName,
   onComplete
 }) {
   const maxLength = INPUT_FIELD_MAX_LENGTH[fieldName];
+  const [errorTypes, setErrorTypes] = reactExports.useState(
+    Object.keys(inputValue).reduce(
+      (acc, key) => {
+        acc[key] = [];
+        return acc;
+      },
+      {}
+    )
+  );
+  const errorMessage = reactExports.useMemo(() => {
+    const currentErrorStatus = Object.values(errorTypes).find((arr) => arr.length > 0);
+    const currentErrorType = currentErrorStatus == null ? void 0 : currentErrorStatus[0];
+    return currentErrorType ? ERROR_TYPE_TO_MESSAGE[currentErrorType] : "";
+  }, [errorTypes]);
   const isComplete = reactExports.useMemo(() => {
     return !Boolean(
       Object.values(inputValue).filter(
@@ -15948,13 +15985,26 @@ function useFieldCompletion({
       ).length
     );
   }, [inputValue]);
+  const validateInputError = (inputName, { errorType, isError }) => {
+    setErrorTypes((prevValue) => {
+      const currentErrorType = errorTypes[inputName];
+      const set = new Set(currentErrorType).add(errorType);
+      const newArray = isError ? Array.from(set) : currentErrorType.filter(
+        (currErrorType) => currErrorType !== errorType
+      );
+      return {
+        ...prevValue,
+        [inputName]: newArray
+      };
+    });
+  };
   reactExports.useEffect(() => {
-    if (!onComplete) return;
-    onComplete == null ? void 0 : onComplete({
+    onComplete({
       isComplete: isComplete && !Boolean(errorMessage),
       fieldName
     });
   }, [isComplete, errorMessage]);
+  return { errorTypes, errorMessage, validateInputError };
 }
 function CVCInputField({
   isFocused,
@@ -15963,21 +16013,16 @@ function CVCInputField({
   onComplete
 }) {
   const inputRefs = reactExports.useRef([]);
-  const { errorTypes, errorMessage, validateInputError } = useInputError({
-    inputValue
+  const { errorTypes, errorMessage, validateInputError } = useFieldValidation({
+    inputValue,
+    fieldName: "CVC",
+    onComplete
   });
   const { onChange, onBlur } = useInputFieldHandler({
-    hasError: Boolean(errorMessage),
     fieldName: "CVC",
     inputRefs,
     validateInputError,
     setInputValue
-  });
-  useFieldCompletion({
-    fieldName: "CVC",
-    errorMessage,
-    inputValue,
-    onComplete
   });
   reactExports.useEffect(() => {
     var _a;
@@ -15985,7 +16030,7 @@ function CVCInputField({
       (_a = inputRefs.current[0]) == null ? void 0 : _a.focus();
     }
   }, []);
-  return /* @__PURE__ */ jsxRuntimeExports.jsx(BaseInputField, { label: "CVC", errorMessage, children: CVC_INPUT_TYPE.map((inputType, index) => /* @__PURE__ */ jsxRuntimeExports.jsxs(InputWrapper$3, { children: [
+  return /* @__PURE__ */ jsxRuntimeExports.jsx(InputSection, { title: "CVC 번호를 입력해 주세요", children: /* @__PURE__ */ jsxRuntimeExports.jsx(BaseInputField, { label: "CVC", errorMessage, children: CVC_INPUT_TYPE.map((inputType, index) => /* @__PURE__ */ jsxRuntimeExports.jsxs(InputWrapper$3, { children: [
     /* @__PURE__ */ jsxRuntimeExports.jsx(Label$3, { htmlFor: "CVC-input" }),
     /* @__PURE__ */ jsxRuntimeExports.jsx(
       Input,
@@ -16003,7 +16048,7 @@ function CVCInputField({
         isError: Boolean(errorTypes[inputType].length)
       }
     )
-  ] }, inputType)) });
+  ] }, inputType)) }) });
 }
 const InputWrapper$3 = dt.div`
   width: 100%;
@@ -16058,6 +16103,7 @@ function Selector({
         $isDefaultValue: selectedValue === placeholder,
         onClick: () => setIsOpen((prev2) => !prev2),
         onKeyDown: handleKeyDown,
+        type: "button",
         children: selectedValue
       }
     ),
@@ -16141,15 +16187,22 @@ function CardIssuerSelector({
     }
   });
   return /* @__PURE__ */ jsxRuntimeExports.jsx(
-    Selector,
+    InputSection,
     {
-      ref: inputRef,
-      dropDownOptions: [...CARD_ISSUER_TYPE],
-      placeholder: "카드사를 선택해주세요",
-      onSelectChange: (value) => {
-        setCardIssuer(value);
-        onComplete == null ? void 0 : onComplete();
-      }
+      title: "카드사를 선택해 주세요",
+      caption: "현재 국내 카드사만 가능합니다.",
+      children: /* @__PURE__ */ jsxRuntimeExports.jsx(
+        Selector,
+        {
+          ref: inputRef,
+          dropDownOptions: [...CARD_ISSUER_TYPE],
+          placeholder: "카드사를 선택해주세요",
+          onSelectChange: (value) => {
+            setCardIssuer(value);
+            onComplete == null ? void 0 : onComplete();
+          }
+        }
+      )
     }
   );
 }
@@ -16161,21 +16214,16 @@ function CardNumberInputField({
   onComplete
 }) {
   const inputRefs = reactExports.useRef([]);
-  const { errorTypes, errorMessage, validateInputError } = useInputError({
-    inputValue
+  const { errorTypes, errorMessage, validateInputError } = useFieldValidation({
+    inputValue,
+    fieldName: "cardNumber",
+    onComplete
   });
   const { onChange, onBlur } = useInputFieldHandler({
-    hasError: Boolean(errorMessage),
     fieldName: "cardNumber",
     inputRefs,
     validateInputError,
     setInputValue
-  });
-  useFieldCompletion({
-    fieldName: "cardNumber",
-    errorMessage,
-    inputValue,
-    onComplete
   });
   const onCardNumberChange = ({ name, value }) => {
     onChange({ name, value });
@@ -16192,25 +16240,32 @@ function CardNumberInputField({
       (_a = inputRefs.current[0]) == null ? void 0 : _a.focus();
     }
   }, []);
-  return /* @__PURE__ */ jsxRuntimeExports.jsx(BaseInputField, { label: "카드 번호", errorMessage, children: CARD_NUMBER_INPUT_TYPE.map((inputType, index) => /* @__PURE__ */ jsxRuntimeExports.jsxs(InputWrapper$2, { children: [
-    /* @__PURE__ */ jsxRuntimeExports.jsx(Label$2, { htmlFor: `card-number-input-${inputType}` }),
-    /* @__PURE__ */ jsxRuntimeExports.jsx(
-      Input,
-      {
-        ref: (el) => {
-          inputRefs.current[index] = el;
-        },
-        id: `card-number-input-${inputType}`,
-        inputType: "number",
-        placeholder: "1234",
-        value: inputValue[inputType],
-        onChange: onCardNumberChange,
-        onBlur,
-        name: inputType,
-        isError: Boolean(errorTypes[inputType].length)
-      }
-    )
-  ] }, inputType)) });
+  return /* @__PURE__ */ jsxRuntimeExports.jsx(
+    InputSection,
+    {
+      title: "결제할 카드 번호를 입력해 주세요",
+      caption: "본인 명의의 카드만 결제 가능합니다.",
+      children: /* @__PURE__ */ jsxRuntimeExports.jsx(BaseInputField, { label: "카드 번호", errorMessage, children: CARD_NUMBER_INPUT_TYPE.map((inputType, index) => /* @__PURE__ */ jsxRuntimeExports.jsxs(InputWrapper$2, { children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx(Label$2, { htmlFor: `card-number-input-${inputType}` }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx(
+          Input,
+          {
+            ref: (el) => {
+              inputRefs.current[index] = el;
+            },
+            id: `card-number-input-${inputType}`,
+            inputType: "number",
+            placeholder: "1234",
+            value: inputValue[inputType],
+            onChange: onCardNumberChange,
+            onBlur,
+            name: inputType,
+            isError: Boolean(errorTypes[inputType].length)
+          }
+        )
+      ] }, inputType)) })
+    }
+  );
 }
 const InputWrapper$2 = dt.div`
   width: 100%;
@@ -16226,6 +16281,7 @@ const Label$2 = dt.label`
   white-space: nowrap;
   border: 0;
 `;
+const MAX_VALID_MONTH = 12;
 function ExpirationDateInputField({
   isFocused,
   inputValue,
@@ -16233,17 +16289,21 @@ function ExpirationDateInputField({
   onComplete
 }) {
   const inputRefs = reactExports.useRef([]);
-  useFieldCompletion({
+  useFieldValidation({
     fieldName: "expirationDate",
     inputValue,
     onComplete
   });
   const { onChange } = useInputFieldHandler({
-    hasError: false,
     fieldName: "expirationDate",
     inputRefs,
     setInputValue
   });
+  const onExpirationDateChange = ({ value, name }) => {
+    if (name === "expirationDatePart1" && Number(value) > MAX_VALID_MONTH)
+      return;
+    onChange({ value, name });
+  };
   const onExpirationDateBlur = (e) => {
     const { value, name } = e.target;
     if (value.length === 1)
@@ -16255,24 +16315,31 @@ function ExpirationDateInputField({
       (_a = inputRefs.current[0]) == null ? void 0 : _a.focus();
     }
   }, []);
-  return /* @__PURE__ */ jsxRuntimeExports.jsx(BaseInputField, { label: "유효기간", children: EXPIRATION_DATE_INPUT_TYPE.map((inputType, index) => /* @__PURE__ */ jsxRuntimeExports.jsxs(InputWrapper$1, { children: [
-    /* @__PURE__ */ jsxRuntimeExports.jsx(Label$1, { htmlFor: `expiration-date-${inputType}` }),
-    /* @__PURE__ */ jsxRuntimeExports.jsx(
-      Input,
-      {
-        ref: (el) => {
-          inputRefs.current[index] = el;
-        },
-        id: `expiration-date-${inputType}`,
-        inputType: "number",
-        placeholder: EXPIRATION_DATE_INPUT_PLACEHOLDER[inputType],
-        value: inputValue[inputType],
-        onChange,
-        name: inputType,
-        onBlur: onExpirationDateBlur
-      }
-    )
-  ] }, inputType)) });
+  return /* @__PURE__ */ jsxRuntimeExports.jsx(
+    InputSection,
+    {
+      title: "카드 유효기간을 입력해 주세요",
+      caption: "월/년도(MMYY)를 순서대로 입력해 주세요.",
+      children: /* @__PURE__ */ jsxRuntimeExports.jsx(BaseInputField, { label: "유효기간", children: EXPIRATION_DATE_INPUT_TYPE.map((inputType, index) => /* @__PURE__ */ jsxRuntimeExports.jsxs(InputWrapper$1, { children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx(Label$1, { htmlFor: `expiration-date-${inputType}` }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx(
+          Input,
+          {
+            ref: (el) => {
+              inputRefs.current[index] = el;
+            },
+            id: `expiration-date-${inputType}`,
+            inputType: "number",
+            placeholder: EXPIRATION_DATE_INPUT_PLACEHOLDER[inputType],
+            value: inputValue[inputType],
+            onChange: onExpirationDateChange,
+            name: inputType,
+            onBlur: onExpirationDateBlur
+          }
+        )
+      ] }, inputType)) })
+    }
+  );
 }
 const InputWrapper$1 = dt.div`
   width: 100%;
@@ -16295,21 +16362,16 @@ function PasswordInputField({
   onComplete
 }) {
   const inputRefs = reactExports.useRef([]);
-  const { errorTypes, errorMessage, validateInputError } = useInputError({
-    inputValue
+  const { errorTypes, errorMessage, validateInputError } = useFieldValidation({
+    inputValue,
+    fieldName: "password",
+    onComplete
   });
   const { onChange, onBlur } = useInputFieldHandler({
-    hasError: Boolean(errorMessage),
     fieldName: "password",
     inputRefs,
     setInputValue,
     validateInputError
-  });
-  useFieldCompletion({
-    fieldName: "password",
-    inputValue,
-    errorMessage,
-    onComplete
   });
   reactExports.useEffect(() => {
     var _a;
@@ -16317,25 +16379,32 @@ function PasswordInputField({
       (_a = inputRefs.current[0]) == null ? void 0 : _a.focus();
     }
   }, []);
-  return /* @__PURE__ */ jsxRuntimeExports.jsx(BaseInputField, { label: "비밀번호 앞 2자리", errorMessage, children: PASSWORD_INPUT_TYPE.map((inputType, index) => /* @__PURE__ */ jsxRuntimeExports.jsxs(InputWrapper, { children: [
-    /* @__PURE__ */ jsxRuntimeExports.jsx(Label, { htmlFor: "password-input" }),
-    /* @__PURE__ */ jsxRuntimeExports.jsx(
-      Input,
-      {
-        ref: (el) => {
-          inputRefs.current[index] = el;
-        },
-        id: "password-input",
-        inputType: "password",
-        placeholder: "비밀번호 앞 2자리",
-        value: inputValue.passwordPart1,
-        onChange,
-        name: "passwordPart1",
-        onBlur,
-        isError: Boolean(errorTypes[inputType].length)
-      }
-    )
-  ] }, inputType)) });
+  return /* @__PURE__ */ jsxRuntimeExports.jsx(
+    InputSection,
+    {
+      title: "비밀번호를 입력해 주세요",
+      caption: "앞의 2자리를 입력해주세요",
+      children: /* @__PURE__ */ jsxRuntimeExports.jsx(BaseInputField, { label: "비밀번호 앞 2자리", errorMessage, children: PASSWORD_INPUT_TYPE.map((inputType, index) => /* @__PURE__ */ jsxRuntimeExports.jsxs(InputWrapper, { children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx(Label, { htmlFor: "password-input" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx(
+          Input,
+          {
+            ref: (el) => {
+              inputRefs.current[index] = el;
+            },
+            id: "password-input",
+            inputType: "password",
+            placeholder: "비밀번호 앞 2자리",
+            value: inputValue.passwordPart1,
+            onChange,
+            name: "passwordPart1",
+            onBlur,
+            isError: Boolean(errorTypes[inputType].length)
+          }
+        )
+      ] }, inputType)) })
+    }
+  );
 }
 const InputWrapper = dt.div`
   width: 100%;
@@ -16351,7 +16420,13 @@ const Label = dt.label`
   white-space: nowrap;
   border: 0;
 `;
-function Button({ isFocused, buttonText, buttonType, onClick }) {
+function Button({
+  isFocused,
+  buttonText,
+  buttonType,
+  onClick,
+  type
+}) {
   const buttonRef = reactExports.useRef(null);
   let color = "";
   let background = "";
@@ -16376,6 +16451,7 @@ function Button({ isFocused, buttonText, buttonType, onClick }) {
       $color: color,
       $background: background,
       onClick,
+      type,
       children: buttonText
     }
   );
@@ -16390,64 +16466,49 @@ const StyledButton = dt.button`
   background-color: ${(props) => props.$background};
   cursor: pointer;
 `;
-function InputSection({ title, caption, children }) {
-  return /* @__PURE__ */ jsxRuntimeExports.jsxs(Section, { children: [
-    /* @__PURE__ */ jsxRuntimeExports.jsxs(TitleWrapper, { children: [
-      /* @__PURE__ */ jsxRuntimeExports.jsx(Title, { children: title }),
-      /* @__PURE__ */ jsxRuntimeExports.jsx(Caption, { children: caption })
-    ] }),
-    children
-  ] });
-}
-const Section = dt.section`
-  display: flex;
-  flex-direction: column;
-  width: 100%;
-  gap: 16px;
-`;
-const TitleWrapper = dt.div`
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-`;
-const Title = dt.p`
-  font-weight: 700;
-  font-size: 18px;
-`;
-const Caption = dt.p`
-  font-weight: 400;
-  font-size: 9.5px;
-  color: #8b95a1;
-`;
-function Payments() {
+const ROUTES = {
+  CARD_NEW: "/cards/new",
+  CARD_COMPLETE: "/cards/complete"
+};
+function StepCompleteButton({
+  step,
+  cardNumber,
+  cardIssuer
+}) {
   const navigate = useNavigate();
-  const [cardNumberInputValue, setCardNumberInputValue] = reactExports.useState({
-    cardNumberPart1: "",
-    cardNumberPart2: "",
-    cardNumberPart3: "",
-    cardNumberPart4: ""
-  });
-  const [expirationDateInputValue, setExpirationDateInputValue] = reactExports.useState({
-    expirationDatePart1: "",
-    expirationDatePart2: ""
-  });
-  const [CVCInputValue, setCVCInputValue] = reactExports.useState({
-    CVCPart1: ""
-  });
-  const [passwordInputValue, setPasswordInputValue] = reactExports.useState({
-    passwordPart1: ""
-  });
-  const [cardIssuer, setCardIssuer] = reactExports.useState(
-    null
-  );
-  const [step, setStep] = reactExports.useState(1);
+  return /* @__PURE__ */ jsxRuntimeExports.jsx(ButtonContainer, { children: /* @__PURE__ */ jsxRuntimeExports.jsx(
+    Button,
+    {
+      isFocused: step === FORM_STEP.COMPLETE_BUTTON,
+      buttonText: "확인",
+      buttonType: "default",
+      onClick: (e) => {
+        e.preventDefault();
+        navigate(ROUTES.CARD_COMPLETE, {
+          state: {
+            cardNumber,
+            cardIssuer
+          }
+        });
+      },
+      type: "submit"
+    }
+  ) });
+}
+const ButtonContainer = dt.div`
+  display: flex;
+  position: absolute;
+  bottom: 0px;
+  width: 376px;
+`;
+function useCardCompletion({ step, setStep }) {
   const [isFieldComplete, setIsFieldComplete] = reactExports.useState({
     cardNumber: false,
     expirationDate: false,
     CVC: false,
     password: false
   });
-  const updateCompleteStatus = ({
+  const markFieldComplete = ({
     isComplete,
     fieldName,
     targetStep
@@ -16459,132 +16520,158 @@ function Payments() {
       [fieldName]: isComplete
     }));
   };
+  const isFormComplete = Object.values(isFieldComplete).every(Boolean);
+  return { markFieldComplete, isFormComplete };
+}
+function useCardFormInputs() {
+  const [cardNumber, setCardNumber] = reactExports.useState({
+    cardNumberPart1: "",
+    cardNumberPart2: "",
+    cardNumberPart3: "",
+    cardNumberPart4: ""
+  });
+  const [expirationDate, setExpirationDate] = reactExports.useState({
+    expirationDatePart1: "",
+    expirationDatePart2: ""
+  });
+  const [CVC, setCVC] = reactExports.useState({
+    CVCPart1: ""
+  });
+  const [password, setPassword] = reactExports.useState({
+    passwordPart1: ""
+  });
+  const [cardIssuer, setCardIssuer] = reactExports.useState(
+    null
+  );
   const checkCardType = (value) => {
-    if (value[0] === "4") return "visa";
+    if (value.startsWith("4")) return "visa";
     else if (Number(value) >= 51 && Number(value) <= 55) return "master";
     return null;
   };
-  const cardType = checkCardType(cardNumberInputValue.cardNumberPart1);
-  const isAllFieldComplete = !Boolean(
-    Object.values(isFieldComplete).filter((isComplete) => isComplete === false).length
-  );
-  return /* @__PURE__ */ jsxRuntimeExports.jsxs(PaymentsLayout$1, { children: [
-    /* @__PURE__ */ jsxRuntimeExports.jsxs(PaymentsContainer, { children: [
-      /* @__PURE__ */ jsxRuntimeExports.jsx(
-        CardPreview,
-        {
-          cardNumberInputValue,
-          expirationDateInputValue,
-          cardType,
-          cardIssuer
-        }
-      ),
-      step >= 5 && /* @__PURE__ */ jsxRuntimeExports.jsx(
-        InputSection,
-        {
-          title: "비밀번호를 입력해 주세요",
-          caption: "앞의 2자리를 입력해주세요",
-          children: /* @__PURE__ */ jsxRuntimeExports.jsx(
-            PasswordInputField,
-            {
-              isFocused: step === 5,
-              inputValue: passwordInputValue,
-              setInputValue: setPasswordInputValue,
-              onComplete: (state) => updateCompleteStatus({ ...state, targetStep: 5 })
-            }
-          )
-        }
-      ),
-      step >= 4 && /* @__PURE__ */ jsxRuntimeExports.jsx(InputSection, { title: "CVC 번호를 입력해 주세요", children: /* @__PURE__ */ jsxRuntimeExports.jsx(
-        CVCInputField,
-        {
-          isFocused: step === 4,
-          inputValue: CVCInputValue,
-          setInputValue: setCVCInputValue,
-          onComplete: (state) => updateCompleteStatus({ ...state, targetStep: 4 })
-        }
-      ) }),
-      step >= 3 && /* @__PURE__ */ jsxRuntimeExports.jsx(
-        InputSection,
-        {
-          title: "카드 유효기간을 입력해 주세요",
-          caption: "월/년도(MMYY)를 순서대로 입력해 주세요.",
-          children: /* @__PURE__ */ jsxRuntimeExports.jsx(
-            ExpirationDateInputField,
-            {
-              isFocused: step === 3,
-              inputValue: expirationDateInputValue,
-              setInputValue: setExpirationDateInputValue,
-              onComplete: (state) => updateCompleteStatus({ ...state, targetStep: 3 })
-            }
-          )
-        }
-      ),
-      step >= 2 && /* @__PURE__ */ jsxRuntimeExports.jsx(
-        InputSection,
-        {
-          title: "카드사를 선택해 주세요",
-          caption: "현재 국내 카드사만 가능합니다.",
-          children: /* @__PURE__ */ jsxRuntimeExports.jsx(
-            CardIssuerSelector,
-            {
-              isFocused: step === 2,
-              setCardIssuer,
-              onComplete: () => {
-                if (step === 2) setStep(3);
-              }
-            }
-          )
-        }
-      ),
-      step >= 1 && /* @__PURE__ */ jsxRuntimeExports.jsx(
-        InputSection,
-        {
-          title: "결제할 카드 번호를 입력해 주세요",
-          caption: "본인 명의의 카드만 결제 가능합니다.",
-          children: /* @__PURE__ */ jsxRuntimeExports.jsx(
-            CardNumberInputField,
-            {
-              isFocused: step === 1,
-              inputValue: cardNumberInputValue,
-              setInputValue: setCardNumberInputValue,
-              cardType,
-              onComplete: (state) => updateCompleteStatus({ ...state, targetStep: 1 })
-            }
-          )
-        }
-      )
-    ] }),
-    step >= 6 && isAllFieldComplete && /* @__PURE__ */ jsxRuntimeExports.jsx(ButtonContainer, { children: /* @__PURE__ */ jsxRuntimeExports.jsx(
-      Button,
+  const cardType = checkCardType(cardNumber.cardNumberPart1);
+  return {
+    cardNumber,
+    setCardNumber,
+    expirationDate,
+    setExpirationDate,
+    CVC,
+    setCVC,
+    password,
+    setPassword,
+    cardIssuer,
+    setCardIssuer,
+    cardType
+  };
+}
+const FORM_STEP = {
+  CARD_NUMBER: 1,
+  CARD_ISSUER: 2,
+  EXPIRATION_DATE: 3,
+  CVC: 4,
+  PASSWORD: 5,
+  COMPLETE_BUTTON: 6
+};
+function AddCard() {
+  const {
+    cardNumber,
+    setCardNumber,
+    expirationDate,
+    setExpirationDate,
+    CVC,
+    setCVC,
+    password,
+    setPassword,
+    cardIssuer,
+    setCardIssuer,
+    cardType
+  } = useCardFormInputs();
+  const [step, setStep] = reactExports.useState(1);
+  const { markFieldComplete, isFormComplete } = useCardCompletion({
+    step,
+    setStep
+  });
+  return /* @__PURE__ */ jsxRuntimeExports.jsx(AddCardLayout$1, { children: /* @__PURE__ */ jsxRuntimeExports.jsxs(AddCardContainer, { children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsx(
+      CardPreview,
       {
-        isFocused: step === 6,
-        buttonText: "확인",
-        buttonType: "default",
-        onClick: () => navigate(`/payments/complete`, {
-          state: {
-            cardNumber: cardNumberInputValue.cardNumberPart1,
-            cardIssuer
-          }
+        cardNumberInputValue: cardNumber,
+        expirationDateInputValue: expirationDate,
+        cardType,
+        cardIssuer
+      }
+    ),
+    step >= FORM_STEP.PASSWORD && /* @__PURE__ */ jsxRuntimeExports.jsx(
+      PasswordInputField,
+      {
+        isFocused: step === FORM_STEP.PASSWORD,
+        inputValue: password,
+        setInputValue: setPassword,
+        onComplete: (state) => markFieldComplete({ ...state, targetStep: FORM_STEP.PASSWORD })
+      }
+    ),
+    step >= FORM_STEP.CVC && /* @__PURE__ */ jsxRuntimeExports.jsx(
+      CVCInputField,
+      {
+        isFocused: step === FORM_STEP.CVC,
+        inputValue: CVC,
+        setInputValue: setCVC,
+        onComplete: (state) => markFieldComplete({ ...state, targetStep: FORM_STEP.CVC })
+      }
+    ),
+    step >= FORM_STEP.EXPIRATION_DATE && /* @__PURE__ */ jsxRuntimeExports.jsx(
+      ExpirationDateInputField,
+      {
+        isFocused: step === FORM_STEP.EXPIRATION_DATE,
+        inputValue: expirationDate,
+        setInputValue: setExpirationDate,
+        onComplete: (state) => markFieldComplete({
+          ...state,
+          targetStep: FORM_STEP.EXPIRATION_DATE
         })
       }
-    ) })
-  ] });
+    ),
+    step >= FORM_STEP.CARD_ISSUER && /* @__PURE__ */ jsxRuntimeExports.jsx(
+      CardIssuerSelector,
+      {
+        isFocused: step === FORM_STEP.CARD_ISSUER,
+        setCardIssuer,
+        onComplete: () => {
+          if (step === FORM_STEP.CARD_ISSUER)
+            setStep(FORM_STEP.EXPIRATION_DATE);
+        }
+      }
+    ),
+    step >= FORM_STEP.CARD_NUMBER && /* @__PURE__ */ jsxRuntimeExports.jsx(
+      CardNumberInputField,
+      {
+        isFocused: step === FORM_STEP.CARD_NUMBER,
+        inputValue: cardNumber,
+        setInputValue: setCardNumber,
+        cardType,
+        onComplete: (state) => markFieldComplete({
+          ...state,
+          targetStep: FORM_STEP.CARD_NUMBER
+        })
+      }
+    ),
+    step >= FORM_STEP.COMPLETE_BUTTON && isFormComplete && /* @__PURE__ */ jsxRuntimeExports.jsx(
+      StepCompleteButton,
+      {
+        step,
+        cardNumber: cardNumber.cardNumberPart1,
+        cardIssuer
+      }
+    )
+  ] }) });
 }
-const ButtonContainer = dt.div`
-  display: flex;
-  position: absolute;
-  bottom: 0px;
-  width: 376px;
-`;
-const PaymentsLayout$1 = dt.div`
+const AddCardLayout$1 = dt.div`
   position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
   height: 100vh;
 `;
-const PaymentsContainer = dt.div`
+const AddCardContainer = dt.form`
   position: relative;
   display: flex;
   flex-direction: column;
@@ -16599,14 +16686,14 @@ const PaymentsContainer = dt.div`
   border: 1px solid lightgray;
   overflow: auto;
 `;
-function PaymentsComplete() {
+function AddCardComplete() {
   const location = useLocation();
   const navigate = useNavigate();
   const handleRestart = () => {
-    navigate(`/payments`);
+    navigate(ROUTES.CARD_NEW);
   };
   const { cardNumber, cardIssuer } = location.state;
-  return /* @__PURE__ */ jsxRuntimeExports.jsx(PaymentsLayout, { children: /* @__PURE__ */ jsxRuntimeExports.jsxs(PaymentsCompleteContainer, { children: [
+  return /* @__PURE__ */ jsxRuntimeExports.jsx(AddCardLayout, { children: /* @__PURE__ */ jsxRuntimeExports.jsxs(AddCardCompleteContainer, { children: [
     /* @__PURE__ */ jsxRuntimeExports.jsx(CheckIcon, { src: "/img/check-filled.png" }),
     /* @__PURE__ */ jsxRuntimeExports.jsxs(SuccessMessage, { children: [
       `${cardNumber}로 시작하는`,
@@ -16619,7 +16706,8 @@ function PaymentsComplete() {
         isFocused: true,
         buttonText: "확인",
         buttonType: "default",
-        onClick: handleRestart
+        onClick: handleRestart,
+        type: "button"
       }
     )
   ] }) });
@@ -16632,7 +16720,7 @@ const SuccessMessage = dt.p`
   font-weight: 700;
   font-size: 25px;
 `;
-const PaymentsCompleteContainer = dt.div`
+const AddCardCompleteContainer = dt.div`
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -16647,7 +16735,7 @@ const PaymentsCompleteContainer = dt.div`
   border: 1px solid lightgray;
   overflow: auto;
 `;
-const PaymentsLayout = dt.div`
+const AddCardLayout = dt.div`
   position: relative;
   display: flex;
   align-items: center;
@@ -16656,9 +16744,9 @@ const PaymentsLayout = dt.div`
 `;
 function App() {
   return /* @__PURE__ */ jsxRuntimeExports.jsx(BrowserRouter, { basename: "/react-payments", children: /* @__PURE__ */ jsxRuntimeExports.jsxs(Routes, { children: [
-    /* @__PURE__ */ jsxRuntimeExports.jsx(Route, { path: "/", element: /* @__PURE__ */ jsxRuntimeExports.jsx(Payments, {}) }),
-    /* @__PURE__ */ jsxRuntimeExports.jsx(Route, { path: "/payments", element: /* @__PURE__ */ jsxRuntimeExports.jsx(Payments, {}) }),
-    /* @__PURE__ */ jsxRuntimeExports.jsx(Route, { path: "/payments/complete/", element: /* @__PURE__ */ jsxRuntimeExports.jsx(PaymentsComplete, {}) })
+    /* @__PURE__ */ jsxRuntimeExports.jsx(Route, { path: "/", element: /* @__PURE__ */ jsxRuntimeExports.jsx(Navigate, { to: ROUTES.CARD_NEW }) }),
+    /* @__PURE__ */ jsxRuntimeExports.jsx(Route, { path: ROUTES.CARD_NEW, element: /* @__PURE__ */ jsxRuntimeExports.jsx(AddCard, {}) }),
+    /* @__PURE__ */ jsxRuntimeExports.jsx(Route, { path: ROUTES.CARD_COMPLETE, element: /* @__PURE__ */ jsxRuntimeExports.jsx(AddCardComplete, {}) })
   ] }) });
 }
 ReactDOM.createRoot(document.getElementById("root")).render(
