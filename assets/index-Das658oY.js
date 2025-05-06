@@ -15717,7 +15717,13 @@ function CardPreview({
       $cardBackground: cardIssuer ? CARD_ISSUER_COLORS[cardIssuer] : DEFAULT_CARD_COLOR,
       children: [
         /* @__PURE__ */ jsxRuntimeExports.jsx(CardChip, {}),
-        /* @__PURE__ */ jsxRuntimeExports.jsx(CardTypeBadge, { src: `./img/${cardType}.png`, $cardType: cardType }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx(
+          CardTypeBadge,
+          {
+            src: `/react-payments/img/${cardType}.png`,
+            $cardType: cardType
+          }
+        ),
         /* @__PURE__ */ jsxRuntimeExports.jsx(
           CardInfoBox,
           {
@@ -16110,7 +16116,7 @@ function Selector({
     /* @__PURE__ */ jsxRuntimeExports.jsx(
       DropDownIcon,
       {
-        src: `./img/${!isOpen ? "chevron-up" : "chevron-down"}.png`
+        src: `/react-payments/img/${!isOpen ? "chevron-up" : "chevron-down"}.png`
       }
     ),
     isOpen && /* @__PURE__ */ jsxRuntimeExports.jsx(DropDownContainer, { onClick: (e) => handleSelectedOption(e), children: dropDownOptions.map((option, index) => /* @__PURE__ */ jsxRuntimeExports.jsx(
