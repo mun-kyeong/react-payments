@@ -15828,7 +15828,7 @@ function useInputFieldHandler({
     const nextIndex = INPUT_NAME_TO_INDEX[name] + 1;
     if (!inputRefs.current[nextIndex]) return;
     if (value.length === maxLength) {
-      (_a = inputRefs.current[INPUT_NAME_TO_INDEX[name] + 1]) == null ? void 0 : _a.focus();
+      (_a = inputRefs.current[nextIndex]) == null ? void 0 : _a.focus();
     }
   };
   const onBlur = (e) => {
@@ -16232,13 +16232,13 @@ function CardNumberInputField({
     setInputValue
   });
   const onCardNumberChange = ({ name, value }) => {
-    onChange({ name, value });
     if (name === CARD_NUMBER_INPUT_TYPE[0]) {
       validateInputError(name, {
         errorType: "noneCardType",
         isError: cardType === null
       });
     }
+    onChange({ name, value });
   };
   reactExports.useEffect(() => {
     var _a;
@@ -16700,7 +16700,7 @@ function AddCardComplete() {
   };
   const { cardNumber, cardIssuer } = location.state;
   return /* @__PURE__ */ jsxRuntimeExports.jsx(AddCardLayout, { children: /* @__PURE__ */ jsxRuntimeExports.jsxs(AddCardCompleteContainer, { children: [
-    /* @__PURE__ */ jsxRuntimeExports.jsx(CheckIcon, { src: "/img/check-filled.png" }),
+    /* @__PURE__ */ jsxRuntimeExports.jsx(CheckIcon, { src: "/react-payments/img/check-filled.png" }),
     /* @__PURE__ */ jsxRuntimeExports.jsxs(SuccessMessage, { children: [
       `${cardNumber}로 시작하는`,
       /* @__PURE__ */ jsxRuntimeExports.jsx("br", {}),
