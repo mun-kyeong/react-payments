@@ -23,7 +23,7 @@ function CardIssuerSelector({
     if (isFocused) {
       inputRef.current?.focus();
     }
-  });
+  }, [isFocused]);
 
   return (
     <InputSection

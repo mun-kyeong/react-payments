@@ -36,7 +36,7 @@ function CVCInputField({
     if (isFocused) {
       inputRefs.current[0]?.focus();
     }
-  }, []);
+  }, [isFocused]);
 
   return (
     <InputSection title="CVC 번호를 입력해 주세요">

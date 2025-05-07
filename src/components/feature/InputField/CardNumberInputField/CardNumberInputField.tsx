@@ -50,7 +50,7 @@ function CardNumberInputField({
     if (isFocused) {
       inputRefs.current[0]?.focus();
     }
-  }, []);
+  }, [isFocused]);
 
   return (
     <InputSection
