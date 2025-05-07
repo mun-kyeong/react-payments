@@ -1,4 +1,4 @@
 export const ROUTES = {
-  CARD_NEW: '/cards/new',
-  CARD_COMPLETE: '/cards/complete',
+  CARD_NEW: '/card/new',
+  CARD_COMPLETE: '/card/complete',
 };
